@@ -25,4 +25,12 @@ func main() {
 
 	variance := deviationTotal / float64(len(data))
 	fmt.Println("variance: ", variance)
+
+	standardVariance := math.Sqrt(variance)
+	fmt.Println("standard variance: ", standardVariance)
+
+	for index, d := range data {
+		deviationScore := 10.0*(d-average)/standardVariance + 50
+		fmt.Printf("deviation score of index %d: %f\n", index, deviationScore)
+	}
 }
