@@ -62,6 +62,13 @@ func main() {
 	fmt.Printf("parsed r: %x\n", parsedR)
 	fmt.Printf("parsed s: %x\n", parsedS)
 
-	verifystatus := ecdsa.Verify(&publicKey, hashed, parsedR, parsedS)
+	var c elliptic.Curve
+	c = elliptic.P256()
+	var x, y *big.Int
+	x = publicKey.X
+	y = publicKey.Y
+	generatedPublicKey := ecdsa.PublicKey{Curve: c, X: x, Y: y}
+
+	verifystatus := ecdsa.Verify(&generatedPublicKey, hashed, parsedR, parsedS)
 	fmt.Printf("verify: %t\n", verifystatus)
 }
