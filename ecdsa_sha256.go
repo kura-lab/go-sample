@@ -1,18 +1,18 @@
 package main
 
 import (
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/sha256"
 	"fmt"
 	"math/big"
 )
 
 func main() {
 
-	// P256, P384 or P512
-	ellipticCurve := elliptic.P256()
+	// P256, P384 or P521
+	ellipticCurve := elliptic.P521()
 
 	//privateKey := new(ecdsa.PrivateKey)
 	privateKey, err := ecdsa.GenerateKey(ellipticCurve, rand.Reader)
@@ -29,7 +29,7 @@ func main() {
 	fmt.Printf("public key : %x\n", publicKey)
 
 	//var hash hash.Hash
-	hash := sha256.New()
+	hash := crypto.SHA512.New()
 	r := big.NewInt(0)
 	s := big.NewInt(0)
 
@@ -47,15 +47,36 @@ func main() {
 	fmt.Printf("r: %x\n", r)
 	fmt.Printf("s: %x\n", s)
 
-	signature := r.Bytes()
-	signature = append(signature, s.Bytes()...)
+	keySize := privateKey.Curve.Params().BitSize / 8
+	if privateKey.Curve.Params().BitSize%8 > 0 {
+		keySize += 1
+	}
+
+	// note: r and s need zero left padding if bytes size is lack. this event may occur when you use P521
+	var signature []byte
+	rPad := keySize - len(r.Bytes())
+	if rPad > 0 {
+		zeroPad := make([]byte, rPad)
+		signature = append(zeroPad, r.Bytes()...)
+	} else {
+		signature = append(signature, r.Bytes()...)
+	}
+
+	sPad := keySize - len(s.Bytes())
+	if sPad > 0 {
+		zeroPad := make([]byte, sPad)
+		signature = append(signature, zeroPad...)
+		signature = append(signature, s.Bytes()...)
+	} else {
+		signature = append(signature, s.Bytes()...)
+	}
 
 	fmt.Printf("signature: %x\n", signature)
 
 	// SHA256: key size=32, curve bits=256
 	// SHA384: key size=48, curve bits=384
 	// SHA512: key size=66, curve bits=521 (note: not typo)
-	keySize := 32
+	keySize = 66
 	parsedR := big.NewInt(0).SetBytes(signature[:keySize])
 	parsedS := big.NewInt(0).SetBytes(signature[keySize:])
 
@@ -63,7 +84,7 @@ func main() {
 	fmt.Printf("parsed s: %x\n", parsedS)
 
 	var c elliptic.Curve
-	c = elliptic.P256()
+	c = elliptic.P521()
 	var x, y *big.Int
 	x = publicKey.X
 	y = publicKey.Y
